@@ -64,7 +64,7 @@ export default class Index extends Component {
     {
         var BN = window.web3.utils.BN;
         var withdrawalAmount = new BN("100000000000000000000");
-        this.state.testContract.methods.withdraw(addresses.daiERC20, withdrawalAmount).send({from: this.state.accounts[0]}).on('transactionHash', function(hash){
+        this.state.testContract.methods.withdraw(addresses.daiERC20, addresses.aavelendingpoolcontract, withdrawalAmount).send({from: this.state.accounts[0]}).on('transactionHash', function(hash){
             console.log(hash);
         });
     }
