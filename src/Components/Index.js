@@ -10,7 +10,9 @@ export default class Index extends Component {
         this.state = {
             testContract: null,
             daiERC20Contract: null,
-            accounts: []
+            accounts: [],
+            allowance: 0,
+            balance: 0
         };
     }
 
@@ -18,6 +20,8 @@ export default class Index extends Component {
     async componentDidMount()
     {
         await this.loadWeb3()
+        await this.allowance()
+        await this.balanceOf()
     }
 
     async loadWeb3() {
@@ -55,7 +59,7 @@ export default class Index extends Component {
     {
         var BN = window.web3.utils.BN;
         var depositAmount = new BN("100000000000000000000");
-        this.state.testContract.methods.deposit(addresses.daiERC20, depositAmount).send({from: this.state.accounts[0]}).on('transactionHash', function(hash){
+        this.state.testContract.methods.deposit(addresses.daiERC20,addresses.aavelendingpoolcontract, depositAmount).send({from: this.state.accounts[0]}).on('transactionHash', function(hash){
             console.log(hash);
         });
     }
@@ -73,14 +77,32 @@ export default class Index extends Component {
     {
         var BN = window.web3.utils.BN;
         let approvalAmount = new BN("1000000000000000000000");
-        this.state.daiERC20Contract.methods.approve(addresses.aavelendingpoolcontract, approvalAmount).send({from: this.state.accounts[0]}).on('transaction', function(hash){
-            console.log(hash);
+        this.state.daiERC20Contract.methods.approve( addresses.aavelendingpoolcontract, approvalAmount).send({from: this.state.accounts[0]}).on('receipt', function(receipt){
+            console.log(receipt);
         })
+    }
+
+    allowance = async () =>
+    {
+        let balance = await this.state.daiERC20Contract.methods.allowance(this.state.accounts[0],addresses.aavelendingpoolcontract).call({from: this.state.accounts[0]});
+        console.log(balance);
+        balance = balance / 1000000000000000000;
+        this.setState({allowance: balance});
+    }
+
+    balanceOf = async() =>
+    {
+        let balance = await this.state.daiERC20Contract.methods.balanceOf(this.state.accounts[0]).call({from: this.state.accounts[0]});
+        console.log(balance);
+        balance = balance / 1000000000000000000;
+        this.setState({balance: balance});
     }
 
     render() {
         return (
             <div className="container">
+                <p>Approved Balance: {this.state.allowance} DAI</p>
+                <p>Actual Balance: {this.state.balance} DAI</p>
                <button id="deposit" onClick={this.deposit}>Deposit</button>
                 <button id="withdraw" onClick={this.withdraw}>Withdraw</button>
                 <button id="approve" onClick={this.approve}>Approve</button>
