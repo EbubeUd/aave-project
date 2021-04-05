@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import Web3 from 'web3';
 import testContractABI from '../artifacts/abi/testcontract.json';
 import erc20ContractABI from '../artifacts/abi/erc20.json';
+import lendingPoolContractABI from '../artifacts/abi/lendingPool.json';
+
 import addresses from '../artifacts/addresses.json';
 
 export default class Index extends Component {
@@ -10,9 +12,13 @@ export default class Index extends Component {
         this.state = {
             testContract: null,
             daiERC20Contract: null,
+            lendingPoolContract: null,
+            aDAIContract: null,
             accounts: [],
             allowance: 0,
-            balance: 0
+            daiBalance: 0,
+            aDaiBalance: 0
+            
         };
     }
 
@@ -21,7 +27,8 @@ export default class Index extends Component {
     {
         await this.loadWeb3()
         await this.allowance()
-        await this.balanceOf()
+        await this.balanceOfDAI()
+        await this.balanceOfADAI()
     }
 
     async loadWeb3() {
@@ -39,9 +46,18 @@ export default class Index extends Component {
         const web3 = window.web3;
         let testContract = new web3.eth.Contract(testContractABI, addresses.testcontract);
         let daiERC20 = new web3.eth.Contract(erc20ContractABI, addresses.daiERC20);
+        let lendingPoolContract = new web3.eth.Contract(lendingPoolContractABI, addresses.aavelendingpoolcontract);
+        let aDAIContract = new web3.eth.Contract(erc20ContractABI, addresses.aDAI);
+
         let accounts = await window.web3.eth.getAccounts();
 
-        this.setState({testContract: testContract, daiERC20Contract: daiERC20, accounts: accounts});
+        this.setState({
+            testContract: testContract,
+             daiERC20Contract: daiERC20,
+              lendingPoolContract: lendingPoolContract,
+                accounts: accounts,
+               aDAIContract: aDAIContract
+            });
 
 
         if(testContract != null){
@@ -54,6 +70,15 @@ export default class Index extends Component {
       }
 
 
+
+    directDeposit =() =>
+    {
+        var BN = window.web3.utils.BN;
+        var depositAmount = new BN("100000000000000000000");
+        this.state.lendingPoolContract.methods.deposit(addresses.daiERC20,depositAmount, this.state.accounts[0], 0).send({from: this.state.accounts[0]}).on('transactionHash', function(hash){
+            console.log(hash);
+        });
+    }
 
     deposit = async () =>
     {
@@ -85,17 +110,22 @@ export default class Index extends Component {
     allowance = async () =>
     {
         let balance = await this.state.daiERC20Contract.methods.allowance(this.state.accounts[0],addresses.aavelendingpoolcontract).call({from: this.state.accounts[0]});
-        console.log(balance);
         balance = balance / 1000000000000000000;
         this.setState({allowance: balance});
     }
 
-    balanceOf = async() =>
+    balanceOfDAI = async() =>
     {
         let balance = await this.state.daiERC20Contract.methods.balanceOf(this.state.accounts[0]).call({from: this.state.accounts[0]});
-        console.log(balance);
         balance = balance / 1000000000000000000;
-        this.setState({balance: balance});
+        this.setState({daiBalance: balance});
+    }
+
+    balanceOfADAI = async() =>
+    {
+        let balance = await this.state.aDAIContract.methods.balanceOf(this.state.accounts[0]).call({from: this.state.accounts[0]});
+        balance = balance / 1000000000000000000;
+        this.setState({aDaiBalance: balance});
     }
 
     render() {
@@ -103,6 +133,8 @@ export default class Index extends Component {
             <div className="container">
                 <p>Approved Balance: {this.state.allowance} DAI</p>
                 <p>Actual Balance: {this.state.balance} DAI</p>
+                <p>Pool Balance: {this.state.aDaiBalance} ADAI</p>
+               <button id="deposit" onClick={this.directDeposit}>Direct Deposit</button>
                <button id="deposit" onClick={this.deposit}>Deposit</button>
                 <button id="withdraw" onClick={this.withdraw}>Withdraw</button>
                 <button id="approve" onClick={this.approve}>Approve</button>
