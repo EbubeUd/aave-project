@@ -3,6 +3,7 @@ import Web3 from 'web3';
 import testContractABI from '../artifacts/abi/testcontract.json';
 import erc20ContractABI from '../artifacts/abi/erc20.json';
 import lendingPoolContractABI from '../artifacts/abi/lendingPool.json';
+import uniswapRouterABI from '../artifacts/abi/uniswapRouter.json';
 
 import addresses from '../artifacts/addresses.json';
 
@@ -14,10 +15,13 @@ export default class Index extends Component {
             daiERC20Contract: null,
             lendingPoolContract: null,
             aDAIContract: null,
+            uniswapRouterContract : null,
+            uniswapEthDaiPool : null,
             accounts: [],
-            allowance: 0,
+            allowances: [],
             daiBalance: 0,
-            aDaiBalance: 0
+            aDaiBalance: 0,
+            uniBalance: 0
             
         };
     }
@@ -26,9 +30,11 @@ export default class Index extends Component {
     async componentDidMount()
     {
         await this.loadWeb3()
-        await this.allowance()
         await this.balanceOfDAI()
         await this.balanceOfADAI()
+        await this.allowance(addresses.aavelendingpoolcontract)
+        await this.allowance(addresses.uniswapRouter);
+
     }
 
     async loadWeb3() {
@@ -44,20 +50,25 @@ export default class Index extends Component {
         }
 
         const web3 = window.web3;
+        console.log(uniswapRouterABI, addresses.uniswapRouter );
         let testContract = new web3.eth.Contract(testContractABI, addresses.testcontract);
         let daiERC20 = new web3.eth.Contract(erc20ContractABI, addresses.daiERC20);
         let lendingPoolContract = new web3.eth.Contract(lendingPoolContractABI, addresses.aavelendingpoolcontract);
         let aDAIContract = new web3.eth.Contract(erc20ContractABI, addresses.aDAI);
+        let uniswapRouterContract = new web3.eth.Contract(uniswapRouterABI, addresses.uniswapRouter);
+        let uniswapEthDaiPool = new web3.eth.Contract(erc20ContractABI, addresses.uniswapEthDaiPool); 
 
         let accounts = await window.web3.eth.getAccounts();
 
         this.setState({
             testContract: testContract,
-             daiERC20Contract: daiERC20,
-              lendingPoolContract: lendingPoolContract,
-                accounts: accounts,
-               aDAIContract: aDAIContract
-            });
+            daiERC20Contract: daiERC20,
+            lendingPoolContract: lendingPoolContract,
+            accounts: accounts,
+            aDAIContract: aDAIContract,
+            uniswapRouterContract : uniswapRouterContract,
+            uniswapEthDaiPool : uniswapEthDaiPool
+        });
 
 
         if(testContract != null){
@@ -70,12 +81,34 @@ export default class Index extends Component {
       }
 
 
+    provideEthDaiLiquidity = () => 
+    {
+        
+        var BN = window.web3.utils.BN;
+        var depositAmount = new BN("100000000000000000000");
+        var amountTokenDesired =  depositAmount ;
+        var amountTokenMin = new BN("90000000000000000000");
+        var amountETHMin = new BN("100000000000000000")
+        var deadline = new BN("300000");
+        this.state.uniswapRouterContract.methods.addLiquidityETH(addresses.daiERC20,amountTokenDesired, amountTokenMin, amountETHMin, this.state.accounts[0], deadline).send({from: this.state.accounts[0], value: }).on('transactionHash', function(hash){
+            console.log(hash);
+        });
+    }
 
     directDeposit =() =>
     {
         var BN = window.web3.utils.BN;
         var depositAmount = new BN("100000000000000000000");
         this.state.lendingPoolContract.methods.deposit(addresses.daiERC20,depositAmount, this.state.accounts[0], 0).send({from: this.state.accounts[0]}).on('transactionHash', function(hash){
+            console.log(hash);
+        });
+    }
+
+    directWithdrawal = () =>
+    {
+        var BN = window.web3.utils.BN;
+        var depositAmount = new BN("100000000000000000000");
+        this.state.lendingPoolContract.methods.withdraw(addresses.daiERC20,depositAmount, this.state.accounts[0]).send({from: this.state.accounts[0]}).on('transactionHash', function(hash){
             console.log(hash);
         });
     }
@@ -98,20 +131,23 @@ export default class Index extends Component {
         });
     }
 
-    approve = async () =>
+    approveDAI = async (spender, amount) =>
     {
         var BN = window.web3.utils.BN;
-        let approvalAmount = new BN("1000000000000000000000");
-        this.state.daiERC20Contract.methods.approve( addresses.aavelendingpoolcontract, approvalAmount).send({from: this.state.accounts[0]}).on('receipt', function(receipt){
+        let approvalAmount = new BN(amount);
+        this.state.daiERC20Contract.methods.approve( spender, approvalAmount).send({from: this.state.accounts[0]}).on('receipt', function(receipt){
             console.log(receipt);
         })
     }
 
-    allowance = async () =>
+    allowance = async (spender) =>
     {
-        let balance = await this.state.daiERC20Contract.methods.allowance(this.state.accounts[0],addresses.aavelendingpoolcontract).call({from: this.state.accounts[0]});
+        let balance = await this.state.daiERC20Contract.methods.allowance(this.state.accounts[0],spender).call({from: this.state.accounts[0]});
         balance = balance / 1000000000000000000;
-        this.setState({allowance: balance});
+        console.log("Allowance",balance);
+        let allowances = this.state.allowances;
+        allowances[spender] = balance;
+        this.setState({allowances : allowances})
     }
 
     balanceOfDAI = async() =>
@@ -127,17 +163,38 @@ export default class Index extends Component {
         balance = balance / 1000000000000000000;
         this.setState({aDaiBalance: balance});
     }
+    
+    balanceOfUniTokens = async() =>
+    {
+        let balance = await this.state.uniswapEthDaiPool.methods.balanceOf(this.state.accounts[0]).call({from: this.state.accounts[0]});
+        balance = balance / 1000000000000000000;
+        this.setState({uniBalance: balance});
+    }
+    
+
 
     render() {
         return (
             <div className="container">
-                <p>Approved Balance: {this.state.allowance} DAI</p>
+                <p>Aave Approved Balance: {this.state.allowances[addresses.aavelendingpoolcontract]} DAI</p>
+                <p>Uniswap Approved Balance: {this.state.allowances[addresses.uniswapRouter]} DAI</p>
+
                 <p>Actual Balance: {this.state.daiBalance} DAI</p>
                 <p>Pool Balance: {this.state.aDaiBalance} ADAI</p>
+                <p>Uni Balance: {this.state.uniBalance} UNI</p>
+
+
                <button id="deposit" onClick={this.directDeposit}>Direct Deposit</button>
-               <button id="deposit" onClick={this.deposit}>Deposit</button>
-                <button id="withdraw" onClick={this.withdraw}>Withdraw</button>
-                <button id="approve" onClick={this.approve}>Approve</button>
+               <button id="deposit" onClick={this.deposit}>Deposit</button><br/><br/>
+
+                <button id="withdraw" onClick={this.directWithdrawal}>Direct Withdraw</button>
+                <button id="withdraw" onClick={this.withdraw}>Withdraw</button><br/><br/>
+
+                <button id="withdraw" onClick={this.provideEthDaiLiquidity}>Direct Liq</button>
+                <button id="withdraw" onClick={this.withdraw}>Withdraw</button><br/><br/>
+
+                <button id="approve" onClick= {()=>this.approveDAI(addresses.aavelendingpoolcontract, "1000000000000000000000")}>Approve Aave Lending Pool</button>
+                <button id="approve" onClick= {()=>this.approveDAI(addresses.uniswapRouter, "1000000000000000000000")}>Approve Uniswap Router</button>
           </div>
         )
     }

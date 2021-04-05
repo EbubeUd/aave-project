@@ -2,5 +2,7 @@
     "testcontract": "0x5C75Ba8D3790B9476baD79CB16aee62A88Ed0aD3",
     "daiERC20" : "0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD",
     "aavelendingpoolcontract": "0xe0fba4fc209b4948668006b2be61711b7f465bae",
-    "aDAI" : "0xdcf0af9e59c002fa3aa091a46196b37530fd48a8"
+    "aDAI" : "0xdcf0af9e59c002fa3aa091a46196b37530fd48a8",
+    "uniswapRouter": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    "uniswapEthDaiPool": "0xBbB8eeA618861940FaDEf3071e79458d4c2B42e3"
 }
