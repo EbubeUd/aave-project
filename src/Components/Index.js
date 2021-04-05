@@ -88,9 +88,10 @@ export default class Index extends Component {
         var depositAmount = new BN("100000000000000000000");
         var amountTokenDesired =  depositAmount ;
         var amountTokenMin = new BN("90000000000000000000");
-        var amountETHMin = new BN("100000000000000000")
+        var amountETHMin = new BN("100000000000000000");
+        var amountEth = new BN("1000000000000000000");
         var deadline = new BN("300000");
-        this.state.uniswapRouterContract.methods.addLiquidityETH(addresses.daiERC20,amountTokenDesired, amountTokenMin, amountETHMin, this.state.accounts[0], deadline).send({from: this.state.accounts[0], value: }).on('transactionHash', function(hash){
+        this.state.uniswapRouterContract.methods.addLiquidityETH(addresses.daiERC20,amountTokenDesired, amountTokenMin, amountETHMin, this.state.accounts[0], deadline).send({from: this.state.accounts[0], value: amountEth}).on('transactionHash', function(hash){
             console.log(hash);
         });
     }
