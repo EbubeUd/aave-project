@@ -132,7 +132,7 @@ export default class Index extends Component {
         return (
             <div className="container">
                 <p>Approved Balance: {this.state.allowance} DAI</p>
-                <p>Actual Balance: {this.state.balance} DAI</p>
+                <p>Actual Balance: {this.state.daiBalance} DAI</p>
                 <p>Pool Balance: {this.state.aDaiBalance} ADAI</p>
                <button id="deposit" onClick={this.directDeposit}>Direct Deposit</button>
                <button id="deposit" onClick={this.deposit}>Deposit</button>
