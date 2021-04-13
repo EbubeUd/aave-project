@@ -58,7 +58,7 @@ export default class Index extends Component {
         let uniswapRouterContract = new web3.eth.Contract(uniswapRouterABI, addresses.uniswapRouter);
         let uniswapEthDaiPool = new web3.eth.Contract(erc20ContractABI, addresses.uniswapEthDaiPool); 
 
-        let accounts = await window.web3.eth.getAccounts();
+        let accounts = await window.web3.eth.getAccounts(); // or requestAccounts()
 
         this.setState({
             testContract: testContract,
